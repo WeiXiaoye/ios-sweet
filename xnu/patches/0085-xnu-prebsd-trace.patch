@@ -1,0 +1,29 @@
+diff --git a/osfmk/kern/startup.c b/osfmk/kern/startup.c
+index bec97fb..1afe4bf 100644
+--- a/osfmk/kern/startup.c
++++ b/osfmk/kern/startup.c
+@@ -776,18 +776,24 @@ kernel_bootstrap_thread(void)
+ 	 * max_cpus must be nailed down by the time PE_lockdown_iokit() finishes,
+ 	 * at the latest
+ 	 */
++	printf("SWEET TRACE: vm_set_restrictions(%u) done\n",
++	    machine_info.max_cpus);
+ 	vm_set_restrictions(machine_info.max_cpus);
++	printf("SWEET TRACE: vm_set_restrictions returned\n");
+ 
+ 
+ #if KPERF
+ 	kperf_init_early();
++	printf("SWEET TRACE: kperf_init_early done\n");
+ #endif
+ 
+ 	/*
+ 	 *	Start the user bootstrap.
+ 	 */
+ #ifdef  MACH_BSD
++	printf("SWEET TRACE: calling bsd_init\n");
+ 	bsd_init();
++	printf("SWEET TRACE: bsd_init returned\n");
+ #endif
+ 
+ 
