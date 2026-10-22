@@ -1,0 +1,23 @@
+diff --git a/iokit/Kernel/arm/SweetFramebuffer.cpp b/iokit/Kernel/arm/SweetFramebuffer.cpp
+index 8dd34c9..823260b 100644
+--- a/iokit/Kernel/arm/SweetFramebuffer.cpp
++++ b/iokit/Kernel/arm/SweetFramebuffer.cpp
+@@ -330,6 +330,18 @@ AppleCLCD::present(const uint8_t *rec)
+ {
+ 	uint32_t mask = get32(rec, 0x104);
+ 
++	/* sweet: let the console keep the panel for debugging (patch 0090). */
++	{
++		static int hold = -1;
++		if (hold < 0) {
++			hold = 0;
++			(void)PE_parse_boot_argn("sweetfb_hold", &hold, sizeof(hold));
++		}
++		if (hold != 0 && !panic_active()) {
++			return;
++		}
++	}
++
+ 
+ 	if (!fConsolePaused) {
+ 		int quiet = 0;
