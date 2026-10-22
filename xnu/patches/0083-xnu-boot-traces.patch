@@ -1,0 +1,57 @@
+diff --git a/bsd/dev/sweet_ufs.c b/bsd/dev/sweet_ufs.c
+index 6b926fe..b67e0f5 100644
+--- a/bsd/dev/sweet_ufs.c
++++ b/bsd/dev/sweet_ufs.c
+@@ -592,6 +592,8 @@ sweet_ufs_init(void)
+ 	char want[64] = "userdata";
+ 	int error;
+ 
++	printf("SWEET TRACE: sweet_ufs_init entered\n");
++
+ 	if (SecureDTLookupEntry(NULL, "/sweet-ufs", &node) != kSuccess ||
+ 	    SecureDTGetProperty(node, "reg", (void const **)&reg, &size) != kSuccess ||
+ 	    size < 2 * sizeof(uintptr_t)) {
+@@ -608,6 +610,11 @@ sweet_ufs_init(void)
+ 	su.wait = (wait == 1);
+ 
+ 	su.regs = ml_io_map(reg[0], reg[1]);
++	printf("SWEET TRACE: UFS CAP=0x%x VER=0x%x HCS=0x%x HCE=0x%x\n",
++	    *(volatile uint32_t *)(su.regs + 0x00),
++	    *(volatile uint32_t *)(su.regs + 0x08),
++	    *(volatile uint32_t *)(su.regs + 0x30),
++	    *(volatile uint32_t *)(su.regs + 0x34));
+ 	if (kmem_alloc_contig(kernel_map, &su.dma, DMA_SIZE, PAGE_MASK, 0, 0,
+ 	    KMA_DATA | KMA_ZERO | KMA_PERMANENT, VM_KERN_MEMORY_IOKIT) != KERN_SUCCESS) {
+ 		printf("SWEET UFS: no contiguous DMA memory\n");
+diff --git a/bsd/kern/bsd_init.c b/bsd/kern/bsd_init.c
+index bb2a2bf..0874507 100644
+--- a/bsd/kern/bsd_init.c
++++ b/bsd/kern/bsd_init.c
+@@ -486,6 +486,8 @@ bsd_init(void)
+ 	boolean_t       netboot = FALSE;
+ #endif
+ 
++	printf("SWEET TRACE: bsd_init entered\n");
++
+ #if (DEVELOPMENT || DEBUG)
+ 	platform_stall_panic_or_spin(PLATFORM_STALL_XNU_LOCATION_BSD_INIT);
+ #endif
+@@ -1119,6 +1121,7 @@ bsd_autoconf(void)
+ 		}
+ 	}
+ 
++	printf("SWEET TRACE: bsd_init reached IOKitBSDInit\n");
+ 	return IOKitBSDInit();
+ }
+ 
+@@ -1131,7 +1134,10 @@ setconf(void)
+ 	u_int32_t       flags;
+ 	kern_return_t   err;
+ 
++	printf("SWEET TRACE: IOFindBSDRoot(%s) ...\n", rootdevice);
+ 	err = IOFindBSDRoot(rootdevice, sizeof(rootdevice), &rootdev, &flags);
++	printf("SWEET TRACE: IOFindBSDRoot -> %d rootdev=0x%x flags=0x%x\n",
++	    err, rootdev, flags);
+ 	if (err) {
+ 		printf("setconf: IOFindBSDRoot returned an error (%d);"
+ 		    "setting rootdevice to 'sd0a'.\n", err);     /* XXX DEBUG TEMP */
