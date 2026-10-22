@@ -1,0 +1,20 @@
+diff --git a/iokit/Kernel/arm/SweetFramebuffer.cpp b/iokit/Kernel/arm/SweetFramebuffer.cpp
+index 875e16e..e5de940 100644
+--- a/iokit/Kernel/arm/SweetFramebuffer.cpp
++++ b/iokit/Kernel/arm/SweetFramebuffer.cpp
+@@ -324,6 +324,15 @@ AppleCLCD::swap(const uint8_t *rec)
+ 	memcpy(fPending, rec, SWEET_FB_SWAP_REC_SIZE);
+ 	fDirty = true;
+ 	IOLockUnlock(fLock);
++
++	/*
++	 * sweet: copy now, while the caller still owns the surfaces (patch 0092).
++	 * The timer used to do this later, and by then the surface could be gone.
++	 */
++	IOLockLock(fLock);
++	fDirty = false;
++	IOLockUnlock(fLock);
++	present(fPending);
+ 	if ((++sweet_fb_swap_count % 1000) == 0) {
+ 		IOLog("SWEET FB: %llu swaps\n", sweet_fb_swap_count);
+ 	}
