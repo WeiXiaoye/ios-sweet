@@ -1,0 +1,28 @@
+diff --git a/iokit/Kernel/arm/SweetFramebuffer.cpp b/iokit/Kernel/arm/SweetFramebuffer.cpp
+index a62416c..8dd34c9 100644
+--- a/iokit/Kernel/arm/SweetFramebuffer.cpp
++++ b/iokit/Kernel/arm/SweetFramebuffer.cpp
+@@ -209,6 +209,23 @@ AppleCLCD::start(IOService *provider)
+ void
+ AppleCLCD::vsyncFired(OSObject *owner, IOTimerEventSource *sender)
+ {
++	/* sweet: mute on a timeout as well, see patch 0088. */
++	{
++		static uint32_t mute_ticks;
++		static int mute_after;
++		extern int sweet_console_muted;
++		if (sweet_console_muted == 0 && mute_after == 0) {
++			mute_after = 90;
++			(void)PE_parse_boot_argn("sweetfb_mutesecs", &mute_after, sizeof(mute_after));
++		}
++		if (sweet_console_muted == 0 && mute_after > 0) {
++			if (++mute_ticks > (uint32_t)mute_after * 60u) {
++				sweet_console_muted = 1;
++				IOLog("SWEET FB: console muted after %d s\n", mute_after);
++			}
++		}
++	}
++
+ 	AppleCLCD *fb = (AppleCLCD *)owner;
+ 	uint64_t now = mach_absolute_time();
+ 	uint64_t count = ++fb->fVsyncCount;
