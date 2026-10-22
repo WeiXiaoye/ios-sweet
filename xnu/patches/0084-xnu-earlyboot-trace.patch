@@ -1,0 +1,27 @@
+diff --git a/osfmk/kern/startup.c b/osfmk/kern/startup.c
+index bec97fb..4816171 100644
+--- a/osfmk/kern/startup.c
++++ b/osfmk/kern/startup.c
+@@ -405,9 +405,22 @@ kernel_startup_initialize_upto(startup_subsystem_id_t upto)
+ 			kprintf("%s[%d, rank %d]: %p(%p)\n", __func__,
+ 			    cur->subsystem, cur->rank, cur->func, cur->arg);
+ 		}
++		/*
++		 * sweet: startup_debug=2 traces only the EARLY_BOOT hooks, where
++		 * interrupts and preemption are turned on and the boot currently
++		 * stops. An "enter" without its "exit" names the hook that hangs.
++		 */
++		boolean_t hook_trace = (startup_debug & 0x2) != 0 &&
++		    cur->subsystem == STARTUP_SUB_EARLY_BOOT;
++		if (hook_trace) {
++			kprintf("EARLY_BOOT enter %p\n", cur->func);
++		}
+ 		startup_phase = cur->subsystem - 1;
+ 		kernel_startup_log(cur->subsystem);
+ 		cur->func(cur->arg);
++		if (hook_trace) {
++			kprintf("EARLY_BOOT exit  %p\n", cur->func);
++		}
+ 		startup_entry_cur = ++cur;
+ 	}
+ 	kernel_startup_log(upto);
