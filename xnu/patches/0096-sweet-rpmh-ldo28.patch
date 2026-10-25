@@ -1,0 +1,19 @@
+--- a/bsd/dev/sweet_rpmh.c
++++ b/bsd/dev/sweet_rpmh.c
+@@ -327,9 +327,13 @@
+ int
+ sweet_rpmh_vreg_enable(const char *res, unsigned mv)
+ {
+-	/* Board-specific helper: do not apply PMIC5-LDO policy to arbitrary resources. */
+-	if (!res || strcmp(res, "ldoc11") || mv < 2950 || mv > 3400) {
+-		printf("SWEET RPMH: expected ldoc11 and 2950..3400 mV\n");
++	/* Board-specific helper: do not apply PMIC5-LDO policy to arbitrary
++	 * resources. perseus' touch rail is pm8998_l28 (3.3 V, regulator-boot-on
++	 * in its device tree), and that name is resolved through the command DB
++	 * below just like sweet's own LDO C11; an unknown name fails there. */
++	if (!res || (strcmp(res, "ldoc11") && strcmp(res, "ldo28")) ||
++	    mv < 2950 || mv > 3400) {
++		printf("SWEET RPMH: expected ldoc11 or ldo28 and 2950..3400 mV\n");
+ 		return EINVAL;
+ 	}
+ 	if (__atomic_exchange_n(&rh_lock, 1, __ATOMIC_ACQUIRE)) {
