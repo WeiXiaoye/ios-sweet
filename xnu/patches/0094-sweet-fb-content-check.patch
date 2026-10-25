@@ -1,0 +1,87 @@
+--- a/iokit/Kernel/arm/SweetFramebuffer.cpp
++++ b/iokit/Kernel/arm/SweetFramebuffer.cpp
+@@ -316,6 +316,30 @@
+ static uint32_t sweet_fb_swaps_logged;
+ static uint64_t sweet_fb_swap_count;
+ 
++/*
++ * Is there anything to show? iOS submits surfaces before they are painted;
++ * copying one of those blanks the panel. Sample every 8th pixel -- a full
++ * 1080x2340 scan per swap would cost more than the copy itself.
++ */
++static bool
++sweet_surface_has_content(SweetSurface *s)
++{
++	uintptr_t base = s->kernelAddress();
++	if (base == 0 || s->bytesPerRow == 0 || s->memory == NULL) {
++		return false;
++	}
++	for (uint32_t y = 0; y < s->height; y += 8) {
++		volatile uint32_t *row = (volatile uint32_t *)(base + s->offset +
++		    (uint64_t)y * s->bytesPerRow);
++		for (uint32_t x = 0; x < s->width; x += 8) {
++			if ((row[x] & 0x00ffffffu) != 0) {
++				return true;
++			}
++		}
++	}
++	return false;
++}
++
+ /* Copy each enabled layer's surface into the panel memory (no scaling). */
+ /*
+  * A swap only records the frame: copying 10 MB into the panel on every
+@@ -339,17 +363,7 @@
+ AppleCLCD::present(const uint8_t *rec)
+ {
+ 	uint32_t mask = get32(rec, 0x104);
+-
+-
+-	if (!fConsolePaused) {
+-		int quiet = 0;
+-		fConsolePaused = true;
+-		if (PE_parse_boot_argn("sweetfb_noconsole", &quiet, sizeof(quiet)) && quiet != 0) {
+-			/* Not PE_initialize_console(kPEDisableScreen): its console switch
+-			 * writes the read-only-late cons_ops_index and panics. */
+-			sweet_console_muted = 1;
+-		}
+-	}
++	bool showed = false;
+ 
+ 	for (uint32_t layer = 0; layer < SWEET_FB_LAYERS; layer++) {
+ 		uint32_t id = get32(rec, 0x54 + 4 * layer);
+@@ -374,6 +388,16 @@
+ 			OSSafeReleaseNULL(s);
+ 			continue;
+ 		}
++		if (!sweet_surface_has_content(s)) {
++			static unsigned empty_logged;
++			if (empty_logged < 8) {
++				empty_logged++;
++				IOLog("SWEET FB: surface %u is empty, keeping the last frame\n", id);
++			}
++			s->release();
++			continue;
++		}
++		showed = true;
+ 		uintptr_t src = s->kernelAddress();
+ 		uint32_t bpe = s->bytesPerElement ? s->bytesPerElement : 4;
+ 		if (w <= 0 || h <= 0) {
+@@ -426,6 +450,17 @@
+ 		}
+ 		s->release();
+ 	}
++
++	/* Pause the kernel console only once a real frame is on the panel. */
++	if (showed && !fConsolePaused) {
++		int quiet = 0;
++		fConsolePaused = true;
++		if (PE_parse_boot_argn("sweetfb_noconsole", &quiet, sizeof(quiet)) && quiet != 0) {
++			/* Not PE_initialize_console(kPEDisableScreen): its console switch
++			 * writes the read-only-late cons_ops_index and panics. */
++			sweet_console_muted = 1;
++		}
++	}
+ }
+ 
+ bool
