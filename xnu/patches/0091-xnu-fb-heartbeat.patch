@@ -1,14 +1,19 @@
 diff --git a/iokit/Kernel/arm/SweetFramebuffer.cpp b/iokit/Kernel/arm/SweetFramebuffer.cpp
-index 875e16e..553259b 100644
 --- a/iokit/Kernel/arm/SweetFramebuffer.cpp
 +++ b/iokit/Kernel/arm/SweetFramebuffer.cpp
-@@ -209,6 +209,12 @@ AppleCLCD::start(IOService *provider)
+@@ -209,6 +209,18 @@ AppleCLCD::start(IOService *provider)
  void
  AppleCLCD::vsyncFired(OSObject *owner, IOTimerEventSource *sender)
  {
-+	/* sweet: heartbeat so a hard hang is visible on the panel (patch 0091). */
++	/* sweet: heartbeat so a hard hang is visible on the panel (patch 0091).
++	 * Off by default: it buries the log on the panel; sweetfb_hb=1 enables it. */
 +	static uint32_t hb_ticks;
-+	if ((++hb_ticks % 600u) == 0) {
++	static int hb_on = -1;
++	if (hb_on < 0) {
++		int hb_arg = 0;
++		hb_on = PE_parse_boot_argn("sweetfb_hb", &hb_arg, sizeof(hb_arg)) && hb_arg != 0;
++	}
++	if (hb_on && (++hb_ticks % 600u) == 0) {
 +		IOLog("SWEET HB: %u s\n", hb_ticks / 60u);
 +	}
 +
