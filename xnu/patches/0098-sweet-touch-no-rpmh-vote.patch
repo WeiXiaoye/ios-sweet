@@ -1,0 +1,22 @@
+--- a/bsd/dev/sweet_touch.c
++++ b/bsd/dev/sweet_touch.c
+@@ -772,12 +772,13 @@
+ 	/* perseus ts_active: gpio31 = IRQ (pull-up, 16 mA), gpio32 = reset */
+ 	touch_gpio(31, 0, 3, 7, false, false);
+ 	touch_gpio(32, 0, 3, 7, true, false);
+-	/* pm8998_l28 = avdd; the helper takes millivolts, not the DT's microvolts. */
+-	int power_error = sweet_rpmh_vreg_enable("ldo28", 3300);
+-	if (power_error) {
+-		printf("SWEET TOUCH: LDO28 RPMh enable failed %d; probes skipped\n", power_error);
+-		goto out;
+-	}
++	/*
++	 * pm8998_l28 (touch avdd) is regulator-boot-on: the bootloader already
++	 * enabled it. sweet_rpmh.c drives sweet's own RSC/branch, and on perseus the
++	 * vote never completes -- it holds the RPMh lock that UFS mount needs, which
++	 * stalls the boot. Do not touch the rail from here.
++	 */
++	printf("SWEET TOUCH: LDO28 is regulator-boot-on; not voting through RPMh\n");
+ 	touch_wait(10); /* conservative rail settling; not a DT timing value */
+ 	/* qupv3_se14_i2c: gpio33 SDA, gpio34 SCL, function qup14 (mux 2), 2 mA */
+ 	touch_gpio(33, 2, 0, 0, false, false);
