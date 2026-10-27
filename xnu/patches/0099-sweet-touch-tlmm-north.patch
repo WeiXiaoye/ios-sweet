@@ -1,0 +1,14 @@
+--- a/bsd/dev/sweet_touch.c
++++ b/bsd/dev/sweet_touch.c
+@@ -24,7 +24,10 @@
+ 
+ #define TOUCH_SE_PA      0x00a98000u /* MIX 3: QUPv3 SE14 (qupv3_se14_i2c) */
+ #define TOUCH_GCC_PA     0x00100000u
+-#define TOUCH_NORTH_PA   0x03400000u /* SDM845 TLMM */
++/* SDM845 splits the pin controller in three tiles; GPIO31..34 are in the
++ * north tile (pinctrl-sdm845.c: PINGROUP(31, NORTH, ...)), not at the
++ * region start 0x03400000. */
++#define TOUCH_NORTH_PA   0x03900000u /* TLMM north tile */
+ #define TOUCH_GCC_VOTE   0x5200cu
+ #define TOUCH_RCG       0x18738u    /* GCC_QUPV3_WRAP1_S6 (SE14) RCG */
+ #define TOUCH_GPIO_CFG(n) ((uint32_t)(n) * 0x1000u)
