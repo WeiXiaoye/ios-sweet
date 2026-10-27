@@ -1,0 +1,12 @@
+--- a/bsd/dev/sweet_touch.c
++++ b/bsd/dev/sweet_touch.c
+@@ -772,7 +772,8 @@
+ 	/* perseus ts_active: gpio31 = IRQ (pull-up, 16 mA), gpio32 = reset */
+ 	touch_gpio(31, 0, 3, 7, false, false);
+ 	touch_gpio(32, 0, 3, 7, true, false);
+-	int power_error = sweet_rpmh_vreg_enable("ldo28", 3300000); /* pm8998_l28 = avdd */
++	/* pm8998_l28 = avdd; the helper takes millivolts, not the DT's microvolts. */
++	int power_error = sweet_rpmh_vreg_enable("ldo28", 3300);
+ 	if (power_error) {
+ 		printf("SWEET TOUCH: LDO28 RPMh enable failed %d; probes skipped\n", power_error);
+ 		goto out;
